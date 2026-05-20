@@ -1,0 +1,30 @@
+import { Model, Types } from "mongoose";
+import { SubscriptionType } from "../../../enums/subscription_type";
+
+export interface IUser {
+  name: string;
+  email: string;
+  password?: string;
+  role: string;
+  status: string;
+  subscriptionType: SubscriptionType;
+  postsCount: number;
+  followers: Types.ObjectId[];
+  following: Types.ObjectId[];
+  profile: {
+    avatar: string;
+    bio: string;
+    social: {
+      facebook: string;
+      twitter: string;
+      linkedin: string;
+      instagram: string;
+    };
+  };
+  requestsThisMonth: number;
+  lastRequestDate: Date;
+  posts: Types.ObjectId[];
+  isApplyForWriter: boolean;
+}
+
+export type UserModel = Model<IUser, object>;

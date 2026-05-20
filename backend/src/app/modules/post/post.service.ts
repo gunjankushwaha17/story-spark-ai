@@ -1,0 +1,236 @@
+import ApiError from "../../../errors/api_error";
+import { ITokenPayload } from "../../../interfaces/token";
+import { User } from "../user/user.model";
+import { IPost, IPostPayload, IPostSearchFields } from "./post.interface";
+import httpStatus from "http-status";
+import { Post } from "./post.model";
+import {
+  IGenericResponse,
+  IPaginationOptions,
+} from "../../../interfaces/pagination";
+import paginationHelper from "../../../utils/pagination_helper";
+import { postSearchFields } from "./post.constant";
+import { SortOrder } from "mongoose";
+
+const createPost = async (payload: IPostPayload, token: ITokenPayload) => {
+  const { email, role } = token;
+  const user = await User.findOne({
+    email: email,
+    role: role,
+  });
+  if (!user) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "User not found!");
+  }
+  try {
+    const res = await Post.create({
+      ...payload,
+      author: user._id,
+      updatedBy: user._id,
+    });
+    if (res) {
+      user.postsCount += 1;
+      await user.save();
+    }
+    return res;
+  } catch (error) {
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      "Failed to create post"
+    );
+  }
+};
+
+const getPosts = async (
+  filters: IPostSearchFields,
+  pagination: IPaginationOptions
+): Promise<IGenericResponse<IPost[]>> => {
+  const { page, limit, skip, sortBy, orderBy } = paginationHelper(pagination);
+  const { searchTerm, trendingTopic, sortFilter, genres, ...filterData } =
+    filters;
+  const andCondition = [];
+
+  if (searchTerm) {
+    andCondition.push({
+      $or: postSearchFields.map((field) => ({
+        [field]: {
+          $regex: searchTerm,
+          $options: "i",
+        },
+      })),
+    });
+  }
+
+  if (trendingTopic) {
+    andCondition.push({
+      "topic.title": trendingTopic,
+    });
+  }
+
+  if (genres && genres.length > 0) {
+    andCondition.push({
+      tag: { $in: genres },
+    });
+  }
+
+  if (Object.keys(filterData).length > 0) {
+    andCondition.push({
+      $and: Object.entries(filterData).map(([field, value]) => ({
+        [field]: value,
+      })),
+    });
+  }
+
+  const whereCondition = andCondition.length > 0 ? { $and: andCondition } : {};
+
+  // sort condition
+  const sortCondition: { [key: string]: SortOrder } = {};
+  if (sortFilter === "mostPopular") {
+    sortCondition.likesCount = -1;
+  }
+
+  if (sortBy && orderBy) {
+    sortCondition[sortBy] = orderBy === "asc" ? 1 : -1;
+  }
+
+  const result = await Post.find(whereCondition)
+    .sort(sortCondition)
+    .skip(skip)
+    .limit(limit)
+    .populate("author", "name email createdAt")
+    .populate({
+      path: "reactions",
+      populate: { path: "userId", select: "email" },
+    })
+    .populate("bookmarks", "email");
+  const total = await Post.countDocuments(whereCondition);
+  return {
+    meta: {
+      page,
+      limit,
+      total,
+    },
+    data: result,
+  };
+};
+
+const getLatestPosts = async () => {
+  try {
+    const res = await Post.find()
+      .sort({ createdAt: -1 })
+      .limit(2)
+      .populate("author", "name email createdAt")
+      .populate({
+        path: "reactions",
+        populate: { path: "userId", select: "email" },
+      })
+      .populate("bookmarks", "email");
+    return res;
+  } catch (error) {
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      "Failed to get latest posts"
+    );
+  }
+};
+
+const getFeaturedPosts = async () => {
+  try {
+    const res = await Post.find({ isFeaturedPost: true })
+      .sort({ createdAt: -1, updatedBy: -1 })
+      .limit(2)
+      .populate("author", "name email createdAt")
+      .populate({
+        path: "reactions",
+        populate: { path: "userId", select: "email" },
+      })
+      .populate("bookmarks", "email");
+    return res;
+  } catch (error) {
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      "Failed to get featured posts"
+    );
+  }
+};
+
+const doFeaturedPosts = async (postId: string) => {
+  try {
+    const res = await Post.findByIdAndUpdate(
+      postId,
+      { isFeaturedPost: true },
+      { new: true }
+    );
+    return res;
+  } catch (error) {
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      "Failed to approve featured posts"
+    );
+  }
+};
+
+const getSinglePost = async (id: string) => {
+  const postById = await Post.findOne({ _id: id })
+    .populate("author", "name email createdAt")
+    .populate({
+      path: "reactions",
+      populate: { path: "userId", select: "email" },
+    })
+    .populate("bookmarks", "email");
+  if (!postById) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Post not found!");
+  }
+  return postById;
+};
+
+const getPostsByTag = async (tag: string) => {
+  const result = await Post.find({ tag })
+    .limit(2)
+    .populate("author", "name email createdAt")
+    .populate({
+      path: "reactions",
+      populate: { path: "userId", select: "email" },
+    })
+    .populate("bookmarks", "email");
+  return result;
+};
+
+const toggleBookmark = async (postId: string, token: ITokenPayload) => {
+  const { email } = token;
+  const user = await User.findOne({ email });
+  if (!user) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "User not found!");
+  }
+  const post = await Post.findOne({ _id: postId });
+  if (!post) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Post not found!");
+  }
+
+  post.bookmarks = post.bookmarks || [];
+  const isBookmarked = post.bookmarks.some(
+    (uId) => uId && uId.toString() === user._id.toString()
+  );
+
+  if (isBookmarked) {
+    post.bookmarks = post.bookmarks.filter(
+      (uId) => uId && uId.toString() !== user._id.toString()
+    );
+    await post.save();
+    return { message: "Bookmark removed", bookmarked: false };
+  } else {
+    post.bookmarks.push(user._id);
+    await post.save();
+    return { message: "Bookmark added", bookmarked: true };
+  }
+};
+
+export const PostService = {
+  createPost,
+  getPosts,
+  getLatestPosts,
+  getFeaturedPosts,
+  doFeaturedPosts,
+  getSinglePost,
+  getPostsByTag,
+  toggleBookmark,
+};

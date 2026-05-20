@@ -1,0 +1,3 @@
+# Covered by root .gitignore; kept for standalone tooling / clones of backend only
+node_modules/
+.env

@@ -1,0 +1,69 @@
+import { Post } from "../../../models/post";
+import { useGetFeaturedListsQuery } from "../../../redux/apis/post.api";
+import { formatDateShort } from "../../../utils/time-formate";
+import LoadingAnimation from "../../loading/loading.component";
+import SSProfile from "../../ui-component/ss-profile/ss-profile";
+
+const FeatureComponent = () => {
+  const { data, isLoading } = useGetFeaturedListsQuery(undefined);
+  if (isLoading) {
+    return <LoadingAnimation />;
+  }
+  return (
+    <div className="mb-12 text-slate-100">
+      <h2 className="text-2xl font-bold text-slate-100 mb-6">Featured Posts</h2>
+      <div className="grid gap-8 sm:grid-cols-2">
+        {data?.posts?.length ?? 0 > 0 ? (
+          data?.posts?.map((post: Post) => (
+            <div
+              key={post._id}
+              className="h-full bg-blue-500/10 rounded-lg shadow-sm overflow-hidden"
+            >
+              <img
+                className="h-48 w-full object-cover"
+                src={post.imageURL}
+                alt={post.title}
+              />
+              <div className="p-6">
+                <div className="flex items-center mb-3">
+                  <SSProfile name={post.author?.name || 'Unknown User'} size="h-8 w-8" />
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-400">
+                      {post.author?.name || 'Unknown User'}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {formatDateShort(post.createdAt)}
+                    </p>
+                  </div>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-300 mb-2">
+                  {post.title}
+                </h3>
+                <p className="text-gray-400 mb-4">
+                  {post.content.slice(0, 100)}...
+                </p>
+                <div className="flex items-center text-sm text-gray-500">
+                  <span className="flex items-center mr-4">
+                    <i className="far fa-heart mr-1"></i> {post.likesCount}
+                  </span>
+                  <span className="flex items-center mr-4">
+                    <i className="far fa-comment mr-1"></i> {post.commentsCount}
+                  </span>
+                  {/* <span className="flex items-center">
+                    <i className="far fa-bookmark mr-1"></i> 89
+                  </span> */}
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="rounded-lg border border-slate-700/70 bg-slate-900/40 px-4 py-5 text-slate-300">
+            Feature Post is not available!
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default FeatureComponent;
