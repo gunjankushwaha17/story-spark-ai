@@ -776,7 +776,7 @@ if (isLoading) {
             <div id="story-content" className="prose prose-invert max-w-none text-slate-300 leading-relaxed tracking-wide relative z-10">
               <p className="break-words whitespace-pre-wrap">
                 {sentenceSegments.length > 0 ? (
-                  sentenceSegments.map((segment) => {
+                  sentenceSegments.map((segment: StorySentenceSegment) => {
                     const isActiveSentence =
                       isNarrationActive &&
                       narrationWordIndex >= segment.startWordIndex &&

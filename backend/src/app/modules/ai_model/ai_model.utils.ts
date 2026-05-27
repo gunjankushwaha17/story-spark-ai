@@ -110,7 +110,7 @@ export async function generateWithGeminiStories(
 
     const text = response.response.text();
     const parsed = JSON.parse(sanitizeJsonText(text));
-    const stories = Array.isArray(parsed) ? parsed : parsed?.stories;
+    const stories: Story[] = Array.isArray(parsed) ? parsed : parsed?.stories;
 
     if (!Array.isArray(stories) || stories.length === 0) {
       throw new ApiError(
@@ -119,14 +119,22 @@ export async function generateWithGeminiStories(
       );
     }
 
-    const imageResults = await Promise.all(
-      stories.map((story) => fetchImageURL(String(story?.tag ?? "")))
-    );
+    // Fetch images for stories concurrently
+    const imagePromises = stories.map(async (story) => {
+      try {
+        const imageResponse = await fetchImageURL(String(story?.tag ?? story?.title ?? ""));
+        return imageResponse?.imageUrl || "";
+      } catch (e) {
+        return "";
+      }
+    });
+    
+    const imageUrls = await Promise.all(imagePromises);
 
     return stories.map((story, index) => ({
       ...story,
       language,
-      imageURL: imageResults[index].imageUrl,
+      imageURL: imageUrls[index],
       uuid: uuidv4(),
     }));
   } catch (error: unknown) {
