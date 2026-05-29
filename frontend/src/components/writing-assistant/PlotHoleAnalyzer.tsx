@@ -31,7 +31,7 @@ export default function PlotHoleAnalyzer({ storyText }: PlotHoleAnalyzerProps) {
 
     try {
       const baseUrl = getBaseUrl() || import.meta.env.VITE_BASE_URL || "";
-      const response = await axios.post(`${baseUrl}/stories/analyze`, {
+      const response = await axios.post(`${baseUrl}/ai-editor/analyze`, {
         storyText,
       });
 
