@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type FocusEvent, type KeyboardEvent } from "react";
 import {
   UseFormRegister,
   FieldValues,
@@ -34,13 +34,23 @@ const SSInput = <T extends FieldValues>({
   autoFocus
 }: SSInputProps<T>) => {
   const [showPassword, setShowPassword] = useState(false);
+  const [isCapsLockOn, setIsCapsLockOn] = useState(false);
 
+  const isPasswordInput = type === "password";
+  const capsLockWarningId = `${String(name)}-caps-lock-warning`;
+  const registeredInput = register(name, validation);
 
+  const handleCapsLockChange = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (!isPasswordInput) return;
+    setIsCapsLockOn(event.getModifierState("CapsLock"));
+  };
 
-  const inputType =
+  const handleBlur = (event: FocusEvent<HTMLInputElement>) => {
+    registeredInput.onBlur(event);
+    setIsCapsLockOn(false);
+  };
 
-    type === "password" ? (showPassword ? "text" : "password") : type;
-
+  const inputType = isPasswordInput ? (showPassword ? "text" : "password") : type;
 
 
   return (
@@ -55,32 +65,24 @@ const SSInput = <T extends FieldValues>({
           </span>
         )}
 
-       <input
-  type={inputType}
-  id={name}
-  className={`w-full box-border pl-8 pr-10 py-1.5 text-base text-gray-900 dark:text-gray-200 bg-white dark:bg-slate-800 border-0 sm:text-sm ${
-    error
-      ? "outline-red-500"
-      : "outline-gray-800 focus:outline-indigo-600"
-  }`}
-  placeholder={placeholder}
-  autoComplete={autoComplete}
-  {...register(name, validation)}
-/>
-
         <input
           type={inputType}
           id={name}
-          className={`w-full pl-8 pr-10 py-1.5 ttext-base text-gray-900 dark:text-gray-200 bg-white dark:bg-slate-800 border rounded-md sm:text-sm ${
+          className={`w-full pl-8 pr-10 py-1.5 text-base text-gray-900 dark:text-gray-200 bg-white dark:bg-slate-800 border rounded-md sm:text-sm ${
           error
           ? "border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500 dark:border-red-500"
           : "border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:focus:border-blue-500"
           }`}          placeholder={placeholder}
           autoComplete={autoComplete}
-          {...register(name, validation)}
+          autoFocus={autoFocus}
+          aria-describedby={isCapsLockOn ? capsLockWarningId : undefined}
+          {...registeredInput}
+          onKeyDown={handleCapsLockChange}
+          onKeyUp={handleCapsLockChange}
+          onBlur={handleBlur}
         />
 
-        {type === "password" && (
+        {isPasswordInput && (
 
 
           <button
@@ -102,6 +104,15 @@ const SSInput = <T extends FieldValues>({
 
         <p className="text-red-400 text-sm mt-1">{error.message}</p>
 
+      )}
+      {isPasswordInput && isCapsLockOn && (
+        <p
+          id={capsLockWarningId}
+          role="alert"
+          className="mt-1 text-sm font-medium text-amber-500 dark:text-amber-300"
+        >
+          Caps Lock is ON
+        </p>
       )}
 
     </div>
