@@ -15,10 +15,13 @@ import { useLocation } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { setStory } from "../../redux/slices/storySlice";
 import ContinueStoryButton from "../story/ContinueStoryButton";
+import StoryVisualizer from "../story-visualizer/StoryVisualizer";
 import {
   useGenerateAlternateEndingsMutation,
   useGenerateFreeAlternateEndingsMutation,
 } from "../../redux/apis/ai.model.api";
+import { useGenerateStoryVisualsMutation } from "../../redux/apis/story.visualizer.api";
+import type { StoryboardScene } from "../../redux/apis/story.visualizer.api";
 
 // ─── StoryCoverImage ────────────────────────────────────────────────────────
 
@@ -269,6 +272,9 @@ const StoriesViewComponent: React.FC<StoriesComponentProps> = ({
   const [showWorldMap, setShowWorldMap] = useState<boolean>(false);
   const [showRemix, setShowRemix] = useState<boolean>(false);
   const [showTranslator, setShowTranslator] = useState<boolean>(false);
+  const [showStoryVisualizer, setShowStoryVisualizer] = useState<boolean>(false);
+  const [storyboardScenes, setStoryboardScenes] = useState<StoryboardScene[]>([]);
+  const [storyboardStyleGuide, setStoryboardStyleGuide] = useState<string>("");
   const [createPost] = useCreatePostMutation();
   const [deletePost] = useDeletePostMutation();
   const { data: profile } = useGetProfileInfoQuery(undefined, { skip: !isLogin });
@@ -287,6 +293,7 @@ const StoriesViewComponent: React.FC<StoriesComponentProps> = ({
 
   const [generateAlternateEndings] = useGenerateAlternateEndingsMutation();
   const [generateFreeAlternateEndings] = useGenerateFreeAlternateEndingsMutation();
+  const [generateStoryVisuals, { isLoading: isGeneratingVisuals }] = useGenerateStoryVisualsMutation();
 
   useEffect(() => {
     if (selectedStory && !originalStoryContent[selectedStory.uuid]) {
@@ -323,6 +330,38 @@ const StoriesViewComponent: React.FC<StoriesComponentProps> = ({
       setIsGeneratingEndings(false);
     }
   };
+
+  const handleGenerateStoryVisuals = async () => {
+    if (!selectedStory) {
+      toast.error("No story available. Please generate a story first.");
+      return;
+    }
+
+    const toastId = toast.loading("Generating visuals...");
+    try {
+      const res = await generateStoryVisuals({
+        title: selectedStory.title,
+        content: selectedStory.content,
+        genre: selectedStory.genre,
+        language: selectedStory.language,
+      }).unwrap();
+
+      if (res?.data?.scenes?.length) {
+        setStoryboardScenes(res.data.scenes);
+        setStoryboardStyleGuide(res.data.styleGuide);
+        setShowStoryVisualizer(true);
+        toast.success("Storyboard visuals generated successfully!");
+      } else {
+        toast.error("No storyboard scenes were returned.");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to generate visuals. Please try again.");
+    } finally {
+      toast.dismiss(toastId);
+    }
+  };
+
   const handleApplyEnding = (endingData: { style: string; ending: string; fullStory: string }) => {
     if (!selectedStory) return;
     const updatedStory = { ...selectedStory, content: endingData.fullStory };
@@ -660,6 +699,16 @@ const StoriesViewComponent: React.FC<StoriesComponentProps> = ({
                 <button type="button" className="rounded-lg px-4 py-2 bg-violet-700 text-slate-200 font-semibold cursor-pointer hover:bg-violet-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" onClick={() => setShowWorldMap(true)} disabled={!selectedStory}>
                   🗺️ World Map
                 </button>
+                {selectedStory && (
+                  <button
+                    type="button"
+                    className="rounded-lg px-4 py-2 bg-cyan-700 text-slate-200 font-semibold cursor-pointer hover:bg-cyan-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={handleGenerateStoryVisuals}
+                    disabled={isGeneratingVisuals}
+                  >
+                    {isGeneratingVisuals ? "Generating visuals..." : "Generate Visuals"}
+                  </button>
+                )}
                 <button type="button" className="rounded-lg px-4 py-2 bg-fuchsia-700 text-slate-200 font-semibold cursor-pointer hover:bg-fuchsia-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" onClick={() => setShowRemix(true)} disabled={!selectedStory}>
                   🔀 Remix
                 </button>
@@ -888,6 +937,14 @@ const StoriesViewComponent: React.FC<StoriesComponentProps> = ({
       )}
       {showWorldMap && selectedStory && (
         <StoryWorldMap story={selectedStory.content} title={selectedStory.title} onClose={() => setShowWorldMap(false)} />
+      )}
+      {showStoryVisualizer && storyboardScenes.length > 0 && (
+        <StoryVisualizer
+          title={selectedStory?.title}
+          scenes={storyboardScenes}
+          styleGuide={storyboardStyleGuide}
+          onClose={() => setShowStoryVisualizer(false)}
+        />
       )}
       <Toaster position="top-right" reverseOrder={false} />
     </div>
