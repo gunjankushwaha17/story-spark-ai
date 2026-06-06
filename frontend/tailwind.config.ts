@@ -1,4 +1,3 @@
-
 export default {
   content: [
     "./index.html",
@@ -115,6 +114,7 @@ export default {
       },
     },
   },
-
-  plugins: [],
+  plugins: [forms, containerQueries],
 };
+
+export default config;
