@@ -33,14 +33,36 @@ export const raceGenerationWithTimeout = async <T>(
         controller.abort();
         resolve(result);
       })
+     export const raceGenerationWithTimeout = async <T>(
+  operation: (signal: AbortSignal) => Promise<T>,
+  timeLimitMs: number
+): Promise<T> => {
+  const controller = new AbortController();
+  let timedOut = false;
+
+  return new Promise<T>((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+      reject(new GenerationTimeoutError());
+    }, timeLimitMs);
+
+    operation(controller.signal)
+      .then((result) => {
+        clearTimeout(timeoutId);
+        resolve(result);
+      })
       .catch((error) => {
         clearTimeout(timeoutId);
-        if (controller.signal.aborted) {
+
+        if (timedOut) {
           reject(new GenerationTimeoutError());
-        } else {
-          controller.abort();
-          reject(error);
+          return;
         }
-      });
+
+        reject(error);
+              });
+          });
+        };
   });
 };
