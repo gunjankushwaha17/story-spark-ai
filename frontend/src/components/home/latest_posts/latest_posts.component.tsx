@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Post } from "../../../models/post";
 import { useGetLatestListsQuery } from "../../../redux/apis/post.api";
@@ -7,9 +7,7 @@ import LoadingAnimation from "../../loading/loading.component";
 const INITIAL_VISIBLE_COUNT = 6;
 
 const LatestPostsComponent = () => {
-  const { data, isLoading, isError, refetch } =
-    useGetLatestListsQuery(undefined);
-
+  const { data, isLoading, isError, refetch } = useGetLatestListsQuery(undefined);
   const navigate = useNavigate();
   const [showAllPosts, setShowAllPosts] = useState(false);
   const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
@@ -38,6 +36,13 @@ const LatestPostsComponent = () => {
       </section>
     );
   }
+
+  const seenIds = new Set<string>();
+  const uniquePosts = (data?.posts ?? []).filter((post: Post) => {
+    if (!post?._id || seenIds.has(post._id)) return false;
+    seenIds.add(post._id);
+    return true;
+  });
 
   const shouldShowLoadMore = uniquePosts.length > INITIAL_VISIBLE_COUNT;
   const visiblePosts =

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { setGuestUserIdCookie } from "../../../utils/cookie.util";
 import httpStatus from "http-status";
+import { setGuestUserIdCookie } from "../../../utils/cookie.util";
 import ApiError from "../../../errors/api_error";
 import catchAsync from "../../../shared/catch_async";
 import sendResponse from "../../../shared/send_response";
@@ -114,6 +115,7 @@ const aiFreeModelAlternateEndings = catchAsync(
     const payload = req.body;
     let userId = req.cookies.userId as string | undefined;
 
+    // ─── FIXED: Replaced raw res.cookie with secure utility wrapper ───
     if (!userId) {
       userId = Math.random().toString(36).substring(7);
       setGuestUserIdCookie(res, userId);  // ✅ Fixed: now includes sameSite
