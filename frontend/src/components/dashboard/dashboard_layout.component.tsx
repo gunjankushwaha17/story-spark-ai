@@ -174,14 +174,20 @@
 import React, { useState } from "react";
 import { Link, Outlet, useLocation, useNavigate, Navigate } from "react-router-dom";
 import { MenuItem, menuItems } from "./dashboard.utils";
-import { getUserInfo } from "../../services/auth.service";
+import { getUserInfo, removeUserInfo } from "../../services/auth.service";
 import { useGetProfileInfoQuery } from "../../redux/apis/user.api";
 const DashboardLayout: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [expanded, setExpanded] = useState<{ [key: string]: boolean }>({});
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const location = useLocation();
   const navigate = useNavigate();
+
+  const handleLogout = () => {
+    removeUserInfo();
+    navigate("/");
+  };
 
   const user = getUserInfo();
 
@@ -246,16 +252,67 @@ const DashboardLayout: React.FC = () => {
             </span>
           </button>
 
-          <img
-            className="h-9 w-9 rounded-full object-cover border border-slate-200 dark:border-white/10"
-            src={
-              userProfile?.profile?.avatar ||
-              `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                user?.name || "User"
-              )}&background=random`
-            }
-            alt="profile"
-          />
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="flex items-center focus:outline-none focus:ring-2 focus:ring-blue-500/40 rounded-full transition-all"
+              aria-expanded={isDropdownOpen}
+              aria-label="User Profile Menu"
+            >
+              <img
+                className="h-9 w-9 rounded-full object-cover border border-slate-200 dark:border-white/10 hover:opacity-90 cursor-pointer"
+                src={
+                  userProfile?.profile?.avatar ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                    user?.name || "User"
+                  )}&background=random`
+                }
+                alt="profile"
+              />
+            </button>
+
+            {isDropdownOpen && (
+              <>
+                <div 
+                  className="fixed inset-0 z-40 cursor-default" 
+                  onClick={() => setIsDropdownOpen(false)}
+                />
+                
+                <div 
+                  className="absolute right-0 mt-2 w-48 rounded-xl bg-white dark:bg-[#0a1020] border border-slate-200 dark:border-white/[0.08] shadow-xl py-2 z-50 transition-all duration-150 transform origin-top-right text-left"
+                  role="menu"
+                >
+                  <div className="px-4 py-2 border-b border-slate-100 dark:border-white/[0.05]">
+                    <p className="text-xs text-slate-400">Signed in as</p>
+                    <p className="text-sm font-semibold truncate text-slate-700 dark:text-slate-200">
+                      {user?.name || "User"}
+                    </p>
+                  </div>
+                  
+                  <Link
+                    to="/dashboard/profile"
+                    onClick={() => setIsDropdownOpen(false)}
+                    className="block px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.05] transition-colors"
+                    role="menuitem"
+                  >
+                    ⚙️ Settings
+                  </Link>
+                  
+                  <button
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      handleLogout();
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors font-medium border-t border-slate-100 dark:border-white/[0.05] mt-1 cursor-pointer"
+                    role="menuitem"
+                  >
+                    Logout
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
