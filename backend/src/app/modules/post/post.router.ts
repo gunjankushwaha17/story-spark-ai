@@ -22,13 +22,19 @@ router.post(
 );
 
 router.get(
-  "/tag/:tag",
-  PostController.getPostsByTag
+  "/lists",
+  PostController.getPosts
 );
 
 router.get(
-  "/:id",
-  PostController.getSinglePost
+  "/my-published-stories",
+  auth(
+    ENUM_USER_ROLE.USER,
+    ENUM_USER_ROLE.WRITER,
+    ENUM_USER_ROLE.ADMIN,
+    ENUM_USER_ROLE.SUPER_ADMIN
+  ),
+  PostController.getPublishedPostsByAuthor
 );
 
 router.get(
@@ -51,14 +57,35 @@ router.get(
   PostController.getFeaturedPosts
 );
 
+router.post(
+  "/remix",
+  auth(
+    ENUM_USER_ROLE.USER,
+    ENUM_USER_ROLE.WRITER,
+    ENUM_USER_ROLE.ADMIN,
+    ENUM_USER_ROLE.SUPER_ADMIN
+  ),
+  checkRequestLimit(),
+  PostController.remixStory
+);
+
+router.post(
+  "/translate",
+  auth(
+    ENUM_USER_ROLE.USER,
+    ENUM_USER_ROLE.WRITER,
+    ENUM_USER_ROLE.ADMIN,
+    ENUM_USER_ROLE.SUPER_ADMIN
+  ),
+  checkRequestLimit(),
+  PostController.translateStory
+);
+
 router.patch(
   "/featured/:postId",
   auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
   PostController.doFeaturedPosts
 );
-
-router.get("/tag/:tag", PostController.getPostsByTag);
-router.get("/:id", PostController.getSinglePost);
 
 router.patch(
   "/bookmark/:id",
@@ -69,6 +96,16 @@ router.patch(
     ENUM_USER_ROLE.SUPER_ADMIN
   ),
   PostController.toggleBookmark
+);
+
+router.get(
+  "/tag/:tag",
+  PostController.getPostsByTag
+);
+
+router.get(
+  "/:id",
+  PostController.getSinglePost
 );
 
 router.patch(
@@ -92,31 +129,6 @@ router.delete(
     ENUM_USER_ROLE.SUPER_ADMIN
   ),
   PostController.deletePost
-);
-
-// AI variation routes
-router.post(
-  "/remix",
-  auth(
-    ENUM_USER_ROLE.USER,
-    ENUM_USER_ROLE.WRITER,
-    ENUM_USER_ROLE.ADMIN,
-    ENUM_USER_ROLE.SUPER_ADMIN
-  ),
-  checkRequestLimit(),
-  PostController.remixStory
-);
-
-router.post(
-  "/translate",
-  auth(
-    ENUM_USER_ROLE.USER,
-    ENUM_USER_ROLE.WRITER,
-    ENUM_USER_ROLE.ADMIN,
-    ENUM_USER_ROLE.SUPER_ADMIN
-  ),
-  checkRequestLimit(),
-  PostController.translateStory
 );
 
 export const PostRouter = router;

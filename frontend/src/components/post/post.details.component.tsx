@@ -1,6 +1,6 @@
 /* eslint-disable */
 import React, { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   useDeletePostMutation,
   useGetPostByIdQuery,
@@ -319,14 +319,29 @@ const PostDetailsComponent = () => {
           <div className="p-8">
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center space-x-4">
-                <SSProfile
-                  name={post?.author?.name || "Unknown User"}
-                  size="h-12 w-12"
-                />
+                {post?.author?._id ? (
+                  <Link to={`/profile/${post.author._id}`} className="flex items-center shrink-0 hover:opacity-85 transition">
+                    <SSProfile
+                      name={post?.author?.name || "Unknown User"}
+                      size="h-12 w-12"
+                    />
+                  </Link>
+                ) : (
+                  <SSProfile
+                    name={post?.author?.name || "Unknown User"}
+                    size="h-12 w-12"
+                  />
+                )}
 
                 <div>
                   <h3 className="font-medium text-slate-700 dark:text-gray-400">
-                    {post?.author?.name || "Unknown User"}
+                    {post?.author?._id ? (
+                      <Link to={`/profile/${post.author._id}`} className="hover:text-indigo-650 dark:hover:text-indigo-400 transition">
+                        {post?.author?.name || "Unknown User"}
+                      </Link>
+                    ) : (
+                      post?.author?.name || "Unknown User"
+                    )}
                   </h3>
 
                   <div className="flex items-center text-sm text-slate-500 dark:text-gray-500">
