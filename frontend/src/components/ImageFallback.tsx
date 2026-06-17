@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useCachedImage } from "../hooks/useCachedImage";
 
 interface ImageFallbackProps {
   src?: string;
@@ -14,11 +15,16 @@ export default function ImageFallback({
   alt,
   className,
 }: ImageFallbackProps) {
-  const [imageSrc, setImageSrc] = useState(src || FALLBACK);
+  const { cachedSrc } = useCachedImage(src);
+  const [imageSrc, setImageSrc] = useState(FALLBACK);
 
   useEffect(() => {
-    setImageSrc(src || FALLBACK);
-  }, [src]);
+    if (cachedSrc) {
+      setImageSrc(cachedSrc);
+    } else {
+      setImageSrc(src || FALLBACK);
+    }
+  }, [cachedSrc, src]);
 
   return (
     <img
