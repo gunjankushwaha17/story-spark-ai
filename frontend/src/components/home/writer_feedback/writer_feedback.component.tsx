@@ -185,9 +185,10 @@ const WriterFeedbackComponent = () => {
               Reviews Submitted
             </p>
           </div>
-
+ <h3 className="text-3xl font-bold text-yellow-600 dark:text-yellow-500">4.9★</h3>
           <div className="rounded-2xl border border-slate-300 shadow-md dark:border-white/10 bg-white/80 p-6 text-center backdrop-blur dark:bg-slate-900/50">
             <h3 className="text-3xl font-bold text-yellow-600 dark:text-yellow-500">4.9★</h3>
+
             <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
               Average Rating
             </p>
