@@ -256,6 +256,84 @@ export const RelatedStoriesComponent: React.FC<IRelatedStoriesComponentProps> = 
   return segments;
 };
 
+const detectStoryMood = (content: string) => {
+  const lowercase = content.toLowerCase();
+  
+  const moodKeywords = {
+    Happy: {
+      emoji: "😊",
+      words: ["happy", "joy", "smile", "laugh", "glad", "cheerful", "delighted", "celebrat", "sunshine", "peace", "content", "love", "wonderful", "positive"],
+      colorClass: "text-amber-300",
+      bgClass: "bg-amber-900/60",
+      borderClass: "border-amber-700/50"
+    },
+    Suspense: {
+      emoji: "😨",
+      words: ["shadow", "mysteri", "mystery", "whisper", "dark", "silence", "sudden", "fear", "dread", "tense", "tension", "escape", "warning", "danger", "trap", "alert", "nervous", "heartbeat", "chill"],
+      colorClass: "text-orange-300",
+      bgClass: "bg-orange-900/60",
+      borderClass: "border-orange-700/50"
+    },
+    Sad: {
+      emoji: "💔",
+      words: ["sad", "tears", "tear", "cry", "weep", "grief", "grieve", "loss", "lost", "lonely", "pain", "sorrow", "mourn", "broken", "empty", "tragic", "regret"],
+      colorClass: "text-cyan-300",
+      bgClass: "bg-cyan-900/60",
+      borderClass: "border-cyan-700/50"
+    },
+    Action: {
+      emoji: "🔥",
+      words: ["run", "fight", "battle", "sword", "strike", "clash", "weapon", "burst", "speed", "explod", "explosion", "chase", "leap", "attack", "defense", "power"],
+      colorClass: "text-rose-300",
+      bgClass: "bg-rose-900/60",
+      borderClass: "border-rose-700/50"
+    },
+    Fantasy: {
+      emoji: "✨",
+      words: ["magic", "spell", "wizard", "witch", "elf", "dwarf", "fairy", "dragon", "portal", "crystal", "kingdom", "cast", "wand", "sparkle", "enchant", "dream", "myth", "legend"],
+      colorClass: "text-purple-300",
+      bgClass: "bg-purple-900/60",
+      borderClass: "border-purple-700/50"
+    }
+  };
+
+  const scores: Record<string, number> = {
+    Happy: 0,
+    Suspense: 0,
+    Sad: 0,
+    Action: 0,
+    Fantasy: 0
+  };
+
+  for (const [mood, data] of Object.entries(moodKeywords)) {
+    data.words.forEach(word => {
+      const regex = new RegExp(`\\b${word}`, 'g');
+      const matches = lowercase.match(regex);
+      if (matches) {
+        scores[mood] += matches.length;
+      }
+    });
+  }
+
+  let maxMood = "Fantasy"; // default fallback mood
+  let maxScore = 0;
+
+  for (const [mood, score] of Object.entries(scores)) {
+    if (score > maxScore) {
+      maxScore = score;
+      maxMood = mood;
+    }
+  }
+
+  return {
+    label: maxMood,
+    emoji: moodKeywords[maxMood as keyof typeof moodKeywords].emoji,
+    colorClass: moodKeywords[maxMood as keyof typeof moodKeywords].colorClass,
+    bgClass: moodKeywords[maxMood as keyof typeof moodKeywords].bgClass,
+    borderClass: moodKeywords[maxMood as keyof typeof moodKeywords].borderClass
+  };
+};
+
 const StoriesViewComponent: React.FC<StoriesComponentProps> = ({
   stories,
   isLogin,
@@ -1262,6 +1340,15 @@ const StoriesViewComponent: React.FC<StoriesComponentProps> = ({
                 <span className="inline-flex items-center rounded-full bg-blue-900/60 text-blue-300 border border-blue-700/50 py-1 px-3 text-xs font-semibold">
                   Γëí╞Æ├«├ë {selectedStory.language || "English"}
                 </span>
+                {(() => {
+                  const mood = detectStoryMood(selectedStory.content);
+                  return (
+                    <span className={`inline-flex items-center rounded-full ${mood.bgClass} ${mood.colorClass} border ${mood.borderClass} py-1 px-3 text-xs font-semibold gap-1`}>
+                      <span>{mood.emoji}</span>
+                      <span>Mood: {mood.label}</span>
+                    </span>
+                  );
+                })()}
                 {selectedStory.emotions && selectedStory.emotions.length > 0 && (
                   <span className="inline-flex items-center rounded-full bg-emerald-900/60 text-emerald-300 border border-emerald-700/50 py-1 px-3 text-xs font-semibold">
                     Γëí╞Æ├┐├¿ {selectedStory.emotions.join(", ")}
